@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-di", "--docker_image", help = "Show Output")
 parser.add_argument("-bc", "--bash_command", help = "Show Output")
 
+
 # Read arguments from command line
 args = parser.parse_args()
 
