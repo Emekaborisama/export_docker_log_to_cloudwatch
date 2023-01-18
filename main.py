@@ -1,30 +1,31 @@
-# Python program to demonstrate
-# command line arguments
+# # import requests
+
+# # url = "http://127.0.0.1:8000/"
 
 
-import argparse
+
+# # r = requests.get(url)
+# # print(r.status_code)
+
+# import subprocess
+# import docker
+
+# text = subprocess.run(["docker", "images"],capture_output=True).stdout
+# print(text)
+
 import subprocess
-import os
-import sys
-
-# Initialize parser
-parser = argparse.ArgumentParser()
-
-# Adding optional argument
-parser.add_argument("-di", "--docker_image", help = "Show Output")
-parser.add_argument("-bc", "--bash_command", help = "Show Output")
 
 
-# Read arguments from command line
-args = parser.parse_args()
 
-print(args.docker_image)
-if args.docker_image:
-    with open("Dockerfile", "w") as f:
-        f.writelines("""FROM python:3.8 \nRUN mkdir /app \nWORKDIR /app \nADD . /app/ \nRUN pip install -r requirements.txt \nCMD ["python", "app.py"]\nEXPOSE 8000""")
+def get_container_logs():
+    logs = []
+    result = subprocess.run(['docker', 'exec', 'cd6e16f662e5d7a9be14f41d0479011f7f4312808a3321c1e8ee81f068f3148c', 'cat', '/var/log/*'], stdout=subprocess.PIPE)
+    logs = result.stdout.decode().strip().split('\n')
+    return logs
 
-if args.bash_command:
-    with open("bash_script.sh", "w") as f:
-        f.writelines("""""")
+# Usage
+container_logs = get_container_logs()
+print(container_logs)
 
-    # rc = subprocess.call("create_docker.sh")
+
+
