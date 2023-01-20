@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 @app.route("/home")
 def index():
-  return("welcome to api")
+  return("welcome to app")
 
 
 
