@@ -161,19 +161,19 @@ class dstack:
 
 
 
-def send_logs_to_cloudwatch(self, logs):
-    def background_task():
-        while True:
-            self.cloudwatch_client.put_log_events(logGroupName=self.group_name, logStreamName=self.stream_name, logEvents=[
-            {
-                "timestamp": int(time.time()*1000),
-                # "message": logs.stdout.read()
-                "message": logs
-            }
-        ])
-            time.sleep(20) # update the logs to cloudwatch every 60 sec
-    process = Process(target=background_task)
-    process.start()
+    def send_logs_to_cloudwatch(self, logs):
+        def background_task():
+            while True:
+                self.cloudwatch_client.put_log_events(logGroupName=self.group_name, logStreamName=self.stream_name, logEvents=[
+                {
+                    "timestamp": int(time.time()*1000),
+                    # "message": logs.stdout.read()
+                    "message": logs
+                }
+            ])
+                time.sleep(20) # update the logs to cloudwatch every 60 sec
+        process = Process(target=background_task)
+        process.start()
 
 
     # def send_logs_to_cloudwatch(self, logs):
