@@ -57,17 +57,40 @@ import json
 # docker_ps = subprocess.run(["docker", "ps", "-q", "--filter", "ancestor=newapp:latest"], capture_output=True)
 # docker_stop = subprocess.run(["docker", "stop"] + docker_ps.stdout.split())
 
-container_id = "386b09caf32cb484c09b7ec6986f5e26a907b87f7424b0c30a4266f1d2274c93"
-logs = subprocess.Popen(["docker", "logs", container_id], stdout=subprocess.PIPE)
-
-log_events = {
-        "timestamp": int(time.time()*1000),
-        "message": logs.stdout.read()
-    }
 
 
+# log_events = {
+#         "timestamp": int(time.time()*1000),
+#         "message": logs.stdout.read()
+#         }
 
-subprocess.run(["aws", "logs", "put-log-events", "--log-group-name", "test_group_1", "--log-stream-name", "test_stream_group1_1", "--region", "us-east-1", "--log-events", str(log_events)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+
+
+# subprocess.run(["aws", "logs", "put-log-events", "--log-group-name", "test_group_1", "--log-stream-name", "test_stream_group1_1", "--region", "us-east-1", "--log-events", str(log_events)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
 
 # st.run("docker stop $(docker ps -q --filter ancestor=newapp:latest)")
+
+
+
+import json
+import time
+
+
+def get_logs_and_store(container_id):
+    
+    logs = subprocess.Popen(["docker", "logs", container_id], stdout=subprocess.PIPE)
+    log_events = [
+        {
+            "timestamp": int(time.time()*1000),
+            "message": logs.stdout.read()
+        }
+    ]
+    print(log_events)
+
+    # subprocess.run(["aws", "logs", "put-log-events", "--log-group-name", "test_group_1", "--log-stream-name", "test_stream_group1_1", "--region", "us-east-1", "--log-events", str(log_events)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+
+
+get_logs_and_store("27f4c007027972d677bcdf74ab1b86c36679c3133c2fc6df4f3355d603a6661e")
+
+# subprocess.Popen(["aws", "logs", "put-log-events", "--log-group-name", "test_group_1", "--log-stream-name", "test_stream_group1_1", "--region", "us-east-1", "--log-events", str(log_events)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)

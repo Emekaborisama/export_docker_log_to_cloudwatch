@@ -4,7 +4,8 @@ import boto3
 import time
 import os
 import docker
-from subprocess_tee import run
+
+from multiprocessing import Process
 # access_key = os.environ.get('AWS_ACCESS_KEY_ID')
 # secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
 # defualt_region = os.environ.get('AWS_REGION')
@@ -59,7 +60,7 @@ class dstack:
 
 
     def dstack_docker_logs(self,container_run_id):
-
+        
         # Run the command
         result = subprocess.run(['docker', 'logs','--details', container_run_id], stdout=subprocess.PIPE)
         # Decode the output
@@ -69,24 +70,19 @@ class dstack:
         print(lines)
         return  lines
 
-    # def dstack_docker_logs(self, container_run_id)-> bytes:
-    #     # logs = container.logs(stream=True)
-    #     logs=[]
-    #     logs.append(subprocess.run(["docker", "logs", "--details",container_run_id],capture_output=True).stdout.strip())
-    #     print("logs",[x for x in logs])
-    #     return logs
+
     
 
 
-    # def get_docker_logs(self, container_run_id):
-    #     # Run the command
-    #     result = subprocess.run(['docker', 'logs', "--details",container_run_id], stdout=subprocess.PIPE)
-    #     # Decode the output
-    #     #output = result.stdout.decode()
-    #     print("output", result)
-    #     return result
+    def get_docker_logs(self, container_run_id):
+        time.sleep(20)
+        logs = subprocess.run(["docker", "logs", container_run_id], stdout=subprocess.PIPE)
+        print(logs)
+        # subprocess.run(["aws", "logs", "put-log-events", "--log-group-name", "test_group_1", "--log-stream-name", "test_stream_group1_1", "--region", "us-east-1", "--log-events", str(log_events)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        
+        return str(logs)
 
- 
+    
 
 
         
@@ -122,7 +118,10 @@ class dstack:
     def run_docker_container(self) -> bytes:
         print("docker image",type(self.docker_image))
         container_run_id = self.dstack_docker_run()
-        logs = self.dstack_docker_logs(container_run_id)
+        logs = self.get_docker_logs(container_run_id)
+        self.send_logs_to_cloudwatch(logs)
+        process = Process(target=self.send_logs_to_cloudwatch(logs))
+        process.start()
         return logs
 
 
@@ -158,39 +157,43 @@ class dstack:
 
 
 
-    def put_log_events(self, container_id):
-        logs = subprocess.Popen(["docker", "logs", container_id], stdout=subprocess.PIPE)
-        log_events = [
+    
+
+
+
+def send_logs_to_cloudwatch(self, logs):
+    def background_task():
+        while True:
+            self.cloudwatch_client.put_log_events(logGroupName=self.group_name, logStreamName=self.stream_name, logEvents=[
             {
                 "timestamp": int(time.time()*1000),
-                "message": logs.stdout.read()
+                # "message": logs.stdout.read()
+                "message": logs
             }
-        ]
-        
-        self.cloudwatch_client.put_log_events(
-            logGroupName=self.group_name,
-            logStreamName=self.stream_name,
-            logEvents=log_events
-        )
-
-    subprocess.Popen(
-        put_log_events,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL
-    )
-
-
-
-    def send_logs_to_cloudwatch(self, logs):
-        # send logs to CloudWatch
-        # for log in logs:
-        # print(logs)
-        self.cloudwatch_client.put_log_events(logGroupName=self.group_name, logStreamName=self.stream_name, logEvents=[
-            {
-                'timestamp': int(time.time() * 1000),
-                'message': str(logs)
-            },
         ])
+            time.sleep(20) # update the logs to cloudwatch every 60 sec
+    process = Process(target=background_task)
+    process.start()
+
+
+    # def send_logs_to_cloudwatch(self, logs):
+    #     # send logs to CloudWatch
+    #     # for log in logs:
+    #     # print(logs)
+    #     # self.cloudwatch_client.put_log_events(logGroupName=self.group_name, logStreamName=self.stream_name, logEvents=[
+    #     #     {
+    #     #         'timestamp': int(time.time() * 1000),
+    #     #         'message': str("logs")
+    #     #     },
+    #     # ])
+    #     self.cloudwatch_client.put_log_events(logGroupName=self.group_name, logStreamName=self.stream_name, logEvents=[
+    #         {
+    #             "timestamp": int(time.time()*1000),
+    #             # "message": logs.stdout.read()
+    #             "message": logs
+    #         }
+    #     ])
+        # self.cloudwatch_client.put_log_events(logGroupName=self.group_name, logStreamName=self.stream_name, logEvents=["logs hello"])
         
 
 
@@ -220,5 +223,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     dstack_run = dstack(docker_image = args.docker_image, bash_command =args.bash_command,
     group_name=args.aws_client_group, stream_name=args.aws_client_stream,aws_access_key_id=args.aws_access_key_id,aws_secret_access_key=args.aws_secret_access_key, region=args.aws_region,ports = args.ports)
-    print(dstack_run.put_log_events("396cdd4e2bcf551f3a7ad8a17f0e490f6bd33419e2de15cd4ed1093e422674a3"))
+    print(dstack_run.run_docker_container())
     # run_docker_container(docker_image=args.docker_image,args.bash_command)
