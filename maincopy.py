@@ -59,28 +59,21 @@ class dstack:
     
 
 
-    def dstack_docker_logs(self,container_run_id):
+    def dstack_docker_logs(self,container_run):
+        return container_run.logs(stream=True, follow=True)
         
-        # Run the command
-        result = subprocess.run(['docker', 'logs','--details', container_run_id], stdout=subprocess.PIPE)
-        # Decode the output
-        output = result.stdout.decode()
-        # Split the output by newline
-        lines = output.split("\n")
-        print(lines)
-        return  lines
 
 
     
 
 
-    def get_docker_logs(self, container_run_id):
-        time.sleep(20)
-        logs = subprocess.run(["docker", "logs", container_run_id], stdout=subprocess.PIPE)
-        print(logs)
-        # subprocess.run(["aws", "logs", "put-log-events", "--log-group-name", "test_group_1", "--log-stream-name", "test_stream_group1_1", "--region", "us-east-1", "--log-events", str(log_events)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+    # def get_docker_logs(self, container_run_id):
+    #     time.sleep(20)
+    #     logs = subprocess.run(["docker", "logs","-f", container_run_id], stdout=subprocess.PIPE)
+    #     print(logs)
+    #     # subprocess.run(["aws", "logs", "put-log-events", "--log-group-name", "test_group_1", "--log-stream-name", "test_stream_group1_1", "--region", "us-east-1", "--log-events", str(log_events)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         
-        return str(logs)
+    #     return str(logs)
 
     
 
@@ -88,6 +81,29 @@ class dstack:
         
 
     def dstack_docker_run(self) -> bytes:
+        # Create a Docker client
+        env = {
+            "AWS_SECRET_ACCESS_KEY": self.aws_secret_access_key,
+            "AWS_ACCESS_KEY_ID":self.aws_access_key_id
+            }
+        client = docker.from_env()
+        # Stop any running container with the image name
+        containers = client.containers.list(filters={"ancestor": self.docker_image, "status": "running"})
+        for container in containers:
+            container.stop()
+        containers_run = client.containers.run(self.docker_image,ports={'8000/tcp': 8000},  environment=env,detach=True)
+        containers_run.exec_run(self.bash_command)
+        
+        # containers_run = client.containers.run(self.docker_image, ports={'8000/tcp': 8000},  environment=env,detach=True,log_config=docker.types.LogConfig(
+        # type="awslogs",
+        # config={
+        #     "awslogs-group": self.group_name,
+        #     "awslogs-stream": self.stream_name,
+        #     "awslogs-region": "us-east-1"
+        #     }
+        # ),
+        #                       ) 
+        return containers_run
         # client = docker.from_env()
         # # run Docker container , 
         # container = client.containers.run(self.docker_image, self.bash_command,stdin_open=True,ports={"8000":"8000/tcp"}, detach=True)
@@ -95,14 +111,14 @@ class dstack:
         # run("docker ps -aq | xargs docker rm -f")
         # try:
         
-        docker_ps = subprocess.run(["docker", "ps", "-q", "--filter", "ancestor="+self.docker_image], capture_output=True)
-        docker_stop = subprocess.run(["docker", "stop"] + docker_ps.stdout.split())
+        # docker_ps = subprocess.run(["docker", "ps", "-q", "--filter", "ancestor="+self.docker_image], capture_output=True)
+        # docker_stop = subprocess.run(["docker", "stop"] + docker_ps.stdout.split())
         
-        container_run_id = subprocess.run(["docker","run","--rm","-d","-t","-p",self.ports,self.docker_image], capture_output=True).stdout.strip()
+        # container_run_id = subprocess.run(["docker","run","--rm","-d","-t","-p",self.ports,self.docker_image], capture_output=True).stdout.strip()
         
-        # subprocess.run(["docker", "exec", "-it",container_run_id,"bash","-c",str(self.bash_command)])
-        print(container_run_id)
-        return container_run_id
+        # # subprocess.run(["docker", "exec", "-it",container_run_id,"bash","-c",str(self.bash_command)])
+        # print(container_run_id)
+        # return container_run_id
         # except subprocess.CalledProcessError as e:
         #     #validate if the docker image exist
         #     if self.docker_image in get_docker_images():
@@ -118,10 +134,8 @@ class dstack:
     def run_docker_container(self) -> bytes:
         print("docker image",type(self.docker_image))
         container_run_id = self.dstack_docker_run()
-        logs = self.get_docker_logs(container_run_id)
-        self.send_logs_to_cloudwatch(logs)
-        process = Process(target=self.send_logs_to_cloudwatch(logs))
-        process.start()
+        logs = self.dstack_docker_logs(container_run_id)
+        # self.send_logs_to_cloudwatch(logs)
         return logs
 
 
@@ -163,16 +177,18 @@ class dstack:
 
     def send_logs_to_cloudwatch(self, logs):
         def background_task():
+            previous_log_line = ""
             while True:
-                self.cloudwatch_client.put_log_events(logGroupName=self.group_name, logStreamName=self.stream_name, logEvents=[
-                {
-                    "timestamp": int(time.time()*1000),
-                    # "message": logs.stdout.read()
-                    "message": logs
-                }
-            ])
-                time.sleep(20) # update the logs to cloudwatch every 60 sec
-        process = Process(target=background_task)
+                log_line = logs.stdout.readline()
+                if log_line != previous_log_line:
+                    self.cloudwatch_client.put_log_events(logGroupName=self.group_name, logStreamName=self.stream_name, logEvents=[
+                        {
+                            "timestamp": int(time.time()*1000),
+                            "message": log_line
+                        }
+                    ])
+        process = Process(target=background_task, args=(self,))
+        process.daemon = True
         process.start()
 
 
