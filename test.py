@@ -1,29 +1,61 @@
 import unittest
 import subprocess
-from ds_docker_cloudfront import dstack, validate_bcommand_dimage, is_bash_runnable, get_docker_images
+try:
+    from ds_docker_2_cloudwatch.main import dstack
+    from ds_docker_2_cloudwatch.utils import validate_bcommand_dimage
+
+except:
+    from main import dstack
+    from utils import validate_bcommand_dimage
+    
+from unittest.mock import patch
+import boto3
+
 
 class TestDstack(unittest.TestCase):
-    def setUp(self):
-        self.docker_image = "alpine:latest"
-        self.bash_command = "echo hello world"
-        self.cw_group_name = "test-group"
-        self.cw_stream_name = "test-stream"
-        self.aws_access_key_id = "test-access-key"
-        self.aws_secret_access_key = "test-secret-key"
-        self.region = "us-west-2"
-        self.ports = 8000
-        self.only_start_logs = False
-        self.dstack_instance = dstack(self.docker_image, self.bash_command, self.cw_group_name, self.cw_stream_name, self.aws_access_key_id, self.aws_secret_access_key, self.region, self.ports, self.only_start_logs)
+    def test_init_missing_parameters(self):
+        # Test for missing parameters
+        with self.assertRaises(TypeError):
+            dstack()
+        with self.assertRaises(TypeError):
+            dstack(docker_image='myimage')
+        with self.assertRaises(TypeError):
+            dstack(docker_image='myimage', bash_command='mycommand')
+        with self.assertRaises(TypeError):
+            dstack(docker_image='myimage', bash_command='mycommand', cw_group_name='mygroup')
+        with self.assertRaises(TypeError):
+            dstack(docker_image='myimage', bash_command='mycommand', cw_group_name='mygroup', cw_stream_name='mystream')
+        with self.assertRaises(TypeError):
+            dstack(docker_image='myimage', bash_command='mycommand', cw_group_name='mygroup', cw_stream_name='mystream', aws_access_key_id='accesskey')
+        with self.assertRaises(TypeError):
+            dstack(docker_image='myimage', bash_command='mycommand', cw_group_name='mygroup', cw_stream_name='mystream', aws_access_key_id='accesskey', aws_secret_access_key='secretkey')
+        with self.assertRaises(TypeError):
+            dstack(docker_image='myimage', bash_command='mycommand', cw_group_name='mygroup', cw_stream_name='mystream', aws_access_key_id='accesskey', aws_secret_access_key='secretkey', region='us-west-2')
+        with self.assertRaises(TypeError):
+            dstack(docker_image='myimage', bash_command='mycommand', cw_group_name='mygroup', cw_stream_name='mystream', aws_access_key_id='accesskey', aws_secret_access_key='secretkey', region='us-west-2', ports=8080)
+            
+    
+    def test_invalid_aws_creds(self):
+        with self.assertRaises(ValueError):
+            dstack_run = dstack(docker_image="alpine:latest", bash_command='pip install flask', cw_group_name='mygroup', cw_stream_name='mystream', aws_access_key_id="aws_key", aws_secret_access_key="aws_secret_key", region='us-west-2', ports=8080, only_start_logs=True)
+            dstack_run.dstack_validate_and_create_client_group_and_streams()
+    
 
-    def test_dstack_docker_run(self):
-        # Test that the method returns a bytes object
-        self.assertIsInstance(self.dstack_instance.dstack_docker_run(), bytes)
 
-    def test_dstack_docker_logs(self):
-        container_run = self.dstack_instance.dstack_docker_run()
-        # Test that the method returns a string
-        self.assertIsInstance(self.dstack_instance.dstack_docker_logs(container_run), str)
 
-    def test_run_docker_container(self):
-        # Test that the method returns a string
-        self.assertIsInstance(self.dstack_instance.run_docker_container(), str)
+class TestValidateBCommandDImage(unittest.TestCase):
+    def test_invalid_bash_command(self):
+        bash_command = "invalid_command"
+        docker_image = "alpine:latest"
+        with self.assertRaises(ValueError):
+            validate_bcommand_dimage(bash_command, docker_image)
+            
+    def test_invalid_docker(self):
+        bash_command = "pip isntall flask"
+        docker_image = None
+        with self.assertRaises(ValueError):
+            validate_bcommand_dimage(bash_command, docker_image)
+
+ 
+if __name__ == '__main__':
+    unittest.main(exit=False)

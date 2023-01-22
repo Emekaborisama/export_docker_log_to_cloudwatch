@@ -156,7 +156,7 @@ class dstack:
                 self.thread.join()
             except:
                 pass
-        container.stop()
+            container.stop()
         # {'8000/tcp': 8000}
         containers_run = client.containers.run(self.docker_image,ports={str(self.ports)+'/tcp':self.ports},detach=True)
         containers_run.exec_run(self.bash_command)
