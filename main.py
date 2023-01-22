@@ -103,9 +103,6 @@ class dstack:
         elif self.only_start_logs == False:
             self.container_id = container_run.id
             self.get_docker_stream_logs(self.container_id)
-            # Start the `get_docker_stream_logs` method as a background process
-            # self.log_process = subprocess.Popen(["python", "-c", f"from {__name__} import get_docker_stream_logs; get_docker_stream_logs('{self.container_run}')"], 
-            #                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,start_new_session=True)
             return ("stream logs running")
         
 
@@ -129,9 +126,6 @@ class dstack:
         elif self.only_start_logs == False:
             self.container_id = container_run.id
             self.get_docker_stream_logs(self.container_id)
-            # # Start the `get_docker_stream_logs` method as a background process
-            # self.log_process = subprocess.Popen(["python", "-c", f"from {__name__} import get_docker_stream_logs; get_docker_stream_logs('{self.container_id}')"], 
-            #                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,start_new_session=True)
             return ("stream logs running")
             
             
@@ -157,7 +151,7 @@ class dstack:
             except:
                 pass
             container.stop()
-        # {'8000/tcp': 8000}
+
         containers_run = client.containers.run(self.docker_image,ports={str(self.ports)+'/tcp':self.ports},detach=True)
         containers_run.exec_run(self.bash_command)
         return containers_run
