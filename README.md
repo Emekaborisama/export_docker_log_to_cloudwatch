@@ -23,5 +23,5 @@ python main.py --docker-image newapp --bash-command 'pip install pip -U && pip i
 
 Requirements:
 - Docker must be installed on the machine 
-- docker==6.0.1
+- [docker==6.0.1](https://pypi.org/project/docker/6.0.1/)
 - AWS credentials with permissions to create and write
