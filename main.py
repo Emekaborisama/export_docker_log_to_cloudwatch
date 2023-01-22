@@ -142,6 +142,7 @@ class dstack:
         for container in containers:
       
             try:
+                # stop any log streaming 
                 if self.thread.is_alive():
                     print("Thread is running")
                 else:

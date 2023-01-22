@@ -54,7 +54,7 @@ def validate_bcommand_dimage(bash_command:str,docker_image):
     if not isinstance(bash_command, str) or not bash_command:
         raise ValueError("bash_command should be a non-empty string")
     if is_bash_runnable(bash_command) == False:
-        raise ValueError("The script isn't runnable and would return an error.")
+        raise ValueError("The bash script isn't runnable and would likely return an error.")
     if docker_image in get_docker_images():
         pass
     else:
