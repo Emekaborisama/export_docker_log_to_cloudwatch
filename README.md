@@ -10,17 +10,18 @@ python main.py --docker-image newapp --bash-command 'pip install pip -U && pip i
 ```
 
 
-docker-image: The name of the Docker image to be used
-bash-command: The command to be run inside the container
-aws-cw-group: The CloudWatch group name to use for logging
-aws-cw-stream: The CloudWatch stream name to use for logging
-aws-access-key-id: The AWS access key ID to use for CloudWatch
-aws-secret-access-key: The AWS secret access key to use for CloudWatch
-aws-region: The AWS region to use for CloudWatch
-ports: The ports to be exposed for the container
-only-start-log: A flag to set if only start logs should be sent to CloudWatch or stream logs.
+- docker-image: The name of the Docker image to be used
+- bash-command: The command to be run inside the container
+- aws-cw-group: The CloudWatch group name to use for logging
+- aws-cw-stream: The CloudWatch stream name to use for logging
+- aws-access-key-id: The AWS access key ID to use for CloudWatch
+- aws-secret-access-key: The AWS secret access key to use for CloudWatch
+- aws-region: The AWS region to use for CloudWatch
+- ports: The ports to be exposed for the container
+- only-start-log: A flag to set if only start logs should be sent to CloudWatch or stream logs.
 
 
 Requirements:
-Docker must be installed on the machine running the script
-AWS credentials with permissions to create and write
+- Docker must be installed on the machine 
+- docker==6.0.1
+- AWS credentials with permissions to create and write
