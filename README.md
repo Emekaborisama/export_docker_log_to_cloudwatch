@@ -1,4 +1,4 @@
-# ds_docker_cloudwatch
+# ds_docker_2_cloudwatch
 
 
 A python module that allows you to run a Docker container and stream its logs to AWS CloudWatch.
